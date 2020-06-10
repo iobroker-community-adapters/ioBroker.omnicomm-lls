@@ -74,6 +74,9 @@ function main(){
             });
             pollInterval && clearInterval(pollInterval);
             pollInterval = setInterval(() => {
+                let buffer = [0x31, adapter.config.address, 0x06];
+                const crc = getCRC(buffer);
+                buffer = Buffer.from(buffer.concat(crc));
                 serial.write(buffer);
             }, 5000);
         });

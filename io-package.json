@@ -70,7 +70,12 @@
     },
     "native": {
         "usbport": "",
-        "baud": 9600
+        "baud": 19200,
+        "address": 1,
+        "minlevel": 0,
+        "maxlevel": 4095,
+        "filtering": ""
+        
     },
     "objects": [],
     "instanceObjects": [
