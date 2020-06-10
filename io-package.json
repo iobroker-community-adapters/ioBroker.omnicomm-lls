@@ -1,0 +1,98 @@
+{
+    "common": {
+        "name": "omnicomm-lls",
+        "version": "0.0.1",
+        "news": {
+            "0.0.1": {
+                "en": "initial release",
+                "de": "Erstveröffentlichung",
+                "ru": "Начальная версия",
+                "pt": "lançamento inicial",
+                "nl": "Eerste uitgave",
+                "fr": "Première version",
+                "it": "Versione iniziale",
+                "es": "Versión inicial",
+                "pl": "Pierwsze wydanie",
+                "zh-cn": "首次出版"
+            }
+        },
+        "title": "Get data omnicomm fuel sensors",
+        "titleLang": {
+            "en": "Get data omnicomm fuel sensors",
+            "de": "Holen Sie sich Daten omnicomm Kraftstoffsensoren",
+            "ru": "Получить данные датчиков топлива omnicomm",
+            "pt": "Obter sensores de combustível omnicomm de dados",
+            "nl": "Verkrijg data omnicomm brandstofsensoren",
+            "fr": "Obtenir des données de capteurs de carburant omnicomm",
+            "it": "Ottieni dati sui sensori di carburante omnicomm",
+            "es": "Obtenga sensores de combustible omnicomm de datos",
+            "pl": "Uzyskaj dane omnicomm czujników paliwa",
+            "zh-cn": "获取数据全向燃油传感器"
+        },
+        "desc": {
+            "en": "Get data omnicomm fuel sensors",
+            "de": "Holen Sie sich Daten omnicomm Kraftstoffsensoren",
+            "ru": "Получить данные датчиков топлива omnicomm",
+            "pt": "Obter sensores de combustível omnicomm de dados",
+            "nl": "Verkrijg data omnicomm brandstofsensoren",
+            "fr": "Obtenir des données de capteurs de carburant omnicomm",
+            "it": "Ottieni dati sui sensori di carburante omnicomm",
+            "es": "Obtenga sensores de combustible omnicomm de datos",
+            "pl": "Uzyskaj dane omnicomm czujników paliwa",
+            "zh-cn": "获取数据全向燃油传感器"
+        },
+        "authors": [
+            "instalator <vvvalt@mail.ru>"
+        ],
+        "keywords": [
+            "iobroker",
+            "omnicomm",
+            "sensors"
+        ],
+        "license": "MIT",
+        "platform": "Javascript/Node.js",
+        "main": "main.js",
+        "icon": "omnicomm-lls.png",
+        "enabled": true,
+        "extIcon": "https://raw.githubusercontent.com/instalator/ioBroker.omnicomm-lls/master/admin/omnicomm-lls.png",
+        "readme": "https://github.com/instalator/ioBroker.omnicomm-lls/blob/master/README.md",
+        "loglevel": "info",
+        "mode": "daemon",
+        "type": "metering",
+        "compact": true,
+        "materialize": true,
+        "dependencies": [
+            {
+                "js-controller": ">=1.4.2"
+            }
+        ]
+    },
+    "native": {
+        "option1": true,
+        "option2": "42"
+    },
+    "objects": [],
+    "instanceObjects": [
+        {
+            "_id": "info",
+            "type": "channel",
+            "common": {
+                "name": "Information"
+            },
+            "native": {}
+        },
+        {
+            "_id": "info.connection",
+            "type": "state",
+            "common": {
+                "role": "indicator.connected",
+                "name": "Device or service connected",
+                "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        }
+    ]
+}
