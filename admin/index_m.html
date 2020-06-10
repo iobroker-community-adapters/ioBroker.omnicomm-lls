@@ -1,93 +1,51 @@
 <html>
-
 <head>
-
-    <!-- Load ioBroker scripts and styles-->
     <link rel="stylesheet" type="text/css" href="../../css/adapter.css" />
     <link rel="stylesheet" type="text/css" href="../../lib/css/materialize.css">
-
     <script type="text/javascript" src="../../lib/js/jquery-3.2.1.min.js"></script>
     <script type="text/javascript" src="../../socket.io/socket.io.js"></script>
-
     <script type="text/javascript" src="../../js/translate.js"></script>
     <script type="text/javascript" src="../../lib/js/materialize.js"></script>
     <script type="text/javascript" src="../../js/adapter-settings.js"></script>
-
-    <!-- Load our own files -->
     <link rel="stylesheet" type="text/css" href="style.css" />
     <script type="text/javascript" src="words.js"></script>
+    <script type="text/javascript" src="admin.js"></script>
 
-    <script type="text/javascript">
-        // This will be called by the admin adapter when the settings page loads
-        function load(settings, onChange) {
-            // example: select elements with id=key and class=value and insert value
-            if (!settings) return;
-            $('.value').each(function () {
-                var $key = $(this);
-                var id = $key.attr('id');
-                if ($key.attr('type') === 'checkbox') {
-                    // do not call onChange direct, because onChange could expect some arguments
-                    $key.prop('checked', settings[id])
-                        .on('change', () => onChange())
-                        ;
-                } else {
-                    // do not call onChange direct, because onChange could expect some arguments
-                    $key.val(settings[id])
-                        .on('change', () => onChange())
-                        .on('keyup', () => onChange())
-                        ;
-                }
-            });
-            onChange(false);
-            // reinitialize all the Materialize labels on the page if you are dynamically adding inputs:
-            if (M) M.updateTextFields();
-        }
-
-        // This will be called by the admin adapter when the user presses the save button
-        function save(callback) {
-            // example: select elements with class=value and build settings object
-            var obj = {};
-            $('.value').each(function () {
-                var $this = $(this);
-                if ($this.attr('type') === 'checkbox') {
-                    obj[$this.attr('id')] = $this.prop('checked');
-                } else {
-                    obj[$this.attr('id')] = $this.val();
-                }
-            });
-            callback(obj);
-        }
-    </script>
 
 </head>
-
 <body>
 
     <div class="m adapter-container">
-
         <div class="row">
             <div class="col s12 m4 l2">
-                <img src="omnicomm-lls.png" class="logo">
+                <img src="logo_admin.png" class="brand-logo" height="100px" alt="Omnicomm LLS adapter">
             </div>
         </div>
-
-        <!-- Put your content here -->
-
-        <!-- For example columns with settings: -->
         <div class="row">
-            <div class="col s6 input-field">
-                <input type="checkbox" class="value" id="option1" />
-                <label for="option1" class="translate">option1</label>
+            <div class="input-field input-group col s12 m6 l3">
+                <input id="usbport" type="text" class="value validate" list="serial-list" autocomplete="on"/>
+                <label for="usbport" class="translate">usbport</label>
+                <datalist id="serial-list">
+                    <!--dinamic list-->
+                </datalist>
             </div>
-
-            <div class="col s6 input-field">
-                <input type="text" class="value" id="option2" />
-                <label for="option2" class="translate">option2</label>
+            <div class="input-field col s2">
+                <select id="baud" class="value">
+                    <option value="300">300</option>
+                    <option value="600">600</option>
+                    <option value="1200">1200</option>
+                    <option value="2400">2400</option>
+                    <option value="4800">4800</option>
+                    <option value="9600">9600</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                    <option value="115200">115200</option>
+                </select>
+                <label class="translate">baud</label>
             </div>
         </div>
-
     </div>
 
 </body>
-
 </html>

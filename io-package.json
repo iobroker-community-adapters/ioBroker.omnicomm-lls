@@ -59,6 +59,7 @@
         "loglevel": "info",
         "mode": "daemon",
         "type": "metering",
+        "messagebox": true,
         "compact": true,
         "materialize": true,
         "dependencies": [
@@ -68,8 +69,8 @@
         ]
     },
     "native": {
-        "option1": true,
-        "option2": "42"
+        "usbport": "",
+        "baud": 9600
     },
     "objects": [],
     "instanceObjects": [
@@ -88,6 +89,58 @@
                 "role": "indicator.connected",
                 "name": "Device or service connected",
                 "type": "boolean",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "temperature",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "Temperature",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "relative_level",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "Relative level",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "frequency_value",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "Frequency value",
+                "type": "number",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "level",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "level",
+                "type": "number",
                 "read": true,
                 "write": false,
                 "def": false

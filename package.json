@@ -1,7 +1,7 @@
 {
   "name": "iobroker.omnicomm-lls",
   "version": "0.0.1",
-  "description": "Get data omnicomm fuel sensors",
+  "description": "Get data Omnicomm LLS fuel sensors",
   "author": {
     "name": "instalator",
     "email": "vvvalt@mail.ru"
@@ -18,7 +18,8 @@
     "url": "https://github.com/instalator/ioBroker.omnicomm-lls"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^2.4.0"
+    "@iobroker/adapter-core": "^2.4.0",
+    "serialport": "^9.0.0"
   },
   "devDependencies": {
     "@iobroker/testing": "^2.2.0",
