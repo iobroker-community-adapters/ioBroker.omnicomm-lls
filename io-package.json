@@ -107,6 +107,7 @@
                 "role": "state",
                 "name": "Temperature",
                 "type": "number",
+                "unit": "°C",
                 "read": true,
                 "write": false,
                 "def": false
@@ -146,6 +147,7 @@
                 "role": "state",
                 "name": "level",
                 "type": "number",
+                "unit": "L",
                 "read": true,
                 "write": false,
                 "def": false

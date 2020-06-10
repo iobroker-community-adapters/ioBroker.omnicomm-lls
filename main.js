@@ -1,25 +1,7 @@
 'use strict';
 const utils = require('@iobroker/adapter-core');
 const SerialPort = require('serialport');
-let adapter, serial, pollInterval;
-
-let buffer = Buffer.from([0x31, 0x03, 0x06, 0xFD]); //значения с лога 31 03 23 02 0b
-
-let CURR_TEMP = 15;
-let CURR_FREQ = 2950;
-let CURR_ADDRESS = '01';
-
-let START_LEVEL = 1142;
-let CURR_LEVEL = 1142;
-let GOAL_LEVEL = START_LEVEL - 310;
-
-let unanswered_count = 0;
-
-let STEP_RATIO = 0.6;
-let MAX_STEP = 50;
-let STEP_DIRECTION = -1;
-let WAIT_STEPS = 12;
-
+let adapter, serial, pollInterval, firststart = true, cmd;
 
 function startAdapter(options){
     return adapter = utils.adapter(Object.assign({}, options, {
@@ -60,60 +42,68 @@ function main(){
     adapter.setState('info.connection', false, true);
     if (adapter.config.usbport){
         serial = new SerialPort(adapter.config.usbport, {
-            baudRate: parseInt(adapter.config.baud, 10) || 9600,
+            baudRate: parseInt(adapter.config.baud, 10) || 19200,
         });
         serial.on('open', () => {
             adapter.setState('info.connection', true, true);
             serial.on('data', (data) => {
                 adapter.log.debug(JSON.stringify(data));
                 parse(data);
-                //show_interface();
             });
             serial.on('error', (err) => {
                 adapter.log.error('Error: ' + err);
             });
             pollInterval && clearInterval(pollInterval);
             pollInterval = setInterval(() => {
-                let buffer = [0x31, adapter.config.address, 0x06];
-                const crc = getCRC(buffer);
-                buffer = Buffer.from(buffer.concat(crc));
-                serial.write(buffer);
+                if (firststart){
+                    firststart = false;
+                    cmd = [0x31, adapter.config.address, 0x10];
+                } else {
+                    cmd = [0x31, adapter.config.address, 0x06];
+                }
+                const crc = getCRC(cmd);
+                cmd = Buffer.from(cmd.concat(crc));
+                serial.write(cmd);
             }, 5000);
         });
     }
 }
 
 function parse(data){
-    /*CURR_ADDRESS = data.substring(2, 4);
-    CURR_TEMP = data.substring(6, 8);
-    CURR_FREQ = data.substring(12, 16);
-    START_LEVEL = parseInt(data.substring(10, 12) + data.substring(8, 10), 16);
-    CURR_LEVEL = START_LEVEL;
-    GOAL_LEVEL = START_LEVEL - 310;*/
-
     adapter.log.debug('Received = ' + data.toString('hex'));
+    //data = Buffer.from([0x3E, 0x03, 0x06, 0x30, 0x10, 0x20, 0x20, 0x30, 0xe7]);
+    
     const crc = getCRC(data.slice(0, data.length - 1));
     adapter.log.debug('Checksum = ' + crc.toString(16));
     if (crc === data[data.length - 1]){
         adapter.log.debug('Чек сумма совпала');
-        let temp = (data[3] & 0x7F);
-        if ((data[3] & 0x80) > 0){
-            temp = temp * -1;
+        if (data[2] !== 0x10){
+            let temp = (data[3] & 0x7F);
+            if ((data[3] & 0x80) > 0) temp = temp * -1;
+            
+            const litr = ((data[5] << 8) | data[4]); //
+            const in_min = ((0x00 << 8) | 0x00);  //Значения при тарировке минимум  // 0
+            const in_max = ((0x0F << 8) | 0xFF);  //Значения при тарировке максимум // 4095
+            const fuel = Scaler(litr, in_min, in_max, 0, 18).toFixed(2);  //Количество литров в баке
+
+            adapter.log.debug('in_min = ' + in_min + ' in_max = ' + in_max + ' litr = ' + litr + ' temp = ' + temp);
+            adapter.log.debug('Литраж = ' + Scaler(litr, in_min, in_max, 0, 25).toFixed(2));
+
+            adapter.setState('level', fuel, true);
+            adapter.setState('temperature', temp, true);
+            adapter.setState('relative_level', litr, true);
+            adapter.setState('frequency_value', ((data[7] << 8) | data[6]), true);
+        } else {
+            const name = toString(data.slice(3, 19));
+            const version = toString(data.slice(19, 30));
+            const mode = data.slice(30, 31);
+            const interval = data.slice(31, 32);
+            const filter = data.slice(32, 33);
+            const min = data.slice(33, 35);
+            const max = data.slice(35, 37);
+            const mind = data.slice(37, 40);
+            const maxd = data.slice(40, 43);
         }
-        adapter.log.debug('Температура = ' + temp);
-
-        const litr = ((data[5] << 8) | data[4]); //
-        const in_min = ((0x00 << 8) | 0x00);  //Значения при тарировке минимум  // 0
-        const in_max = ((0x0F << 8) | 0xFF);  //Значения при тарировке максимум // 4095
-        const fuel = Scaler(litr, in_min, in_max, 0, 18).toFixed(2);  //Количество литров в баке
-
-        adapter.log.debug('in_min = ' + in_min + ' in_max = ' + in_max + ' litr = ' + litr);
-        adapter.log.debug('Литраж = ' + Scaler(litr, in_min, in_max, 0, 25).toFixed(2));
-
-        adapter.setState('level', fuel, true);
-        adapter.setState('temperature', temp, true);
-        adapter.setState('relative_level', litr, true);
-        adapter.setState('frequency_value', ((data[7] << 8) | data[6]), true);
     }
 }
 
