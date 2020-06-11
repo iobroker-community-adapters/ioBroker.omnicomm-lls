@@ -2,7 +2,7 @@
 const utils = require('@iobroker/adapter-core');
 const SerialPort = require('serialport');
 const InterByteTimeout = require('@serialport/parser-inter-byte-timeout');
-let adapter, serial, pollInterval, firststart = true, cmd, obj = {};
+let adapter, serial, pollInterval, firststart = true, obj = {};
 let parser;
 
 function startAdapter(options){
@@ -20,10 +20,29 @@ function startAdapter(options){
             }
         },
         stateChange: (id, state) => {
-            if (state){
+            if (id && state && !state.ack){
                 adapter.log.info(`state ${id} changed: ${state.val} (ack = ${state.ack})`);
-            } else {
-                adapter.log.info(`state ${id} deleted`);
+                const arr = id.split('.');
+                id = arr[arr.length - 1];
+                let val = state.val;
+                if (id === 'onPeriodData'){ //Периодическая выдача данных
+                    send([0x31, obj.address, 0x07]);
+                }
+                if (id === 'mode'){ //Режим выдачи данных по умолчанию
+                    if (val < 0) val = 0;
+                    if (val > 2) val = 2;
+                    send([0x31, obj.address, 0x17, parseInt(val, 10)]);
+                }
+                if (id === 'interval'){ //Изменение интервала периодической выдачи
+                    if (val < 0) val = 0;
+                    if (val > 255) val = 255;
+                    send([0x31, obj.address, 0x13, parseInt(val, 10)]);
+                }
+                if (id === 'filter'){ //Установка глубины фильтрации
+                    if (val < 0) val = 0;
+                    if (val > 20) val = 20;
+                    send([0x31, obj.address, 0x0E, parseInt(val, 10)]);
+                }
             }
         },
         message:     (obj) => {
@@ -39,19 +58,22 @@ function startAdapter(options){
     }));
 }
 
+function send(cmd){
+    const crc = getCRC(cmd);
+    cmd = Buffer.from(cmd.concat(crc));
+    serial.write(cmd);
+}
+
 function main(){
     adapter.subscribeStates('*');
     adapter.setState('info.connection', false, true);
+    obj.address = parseInt(adapter.config.address, 10);
     if (adapter.config.usbport){
         serial = new SerialPort(adapter.config.usbport, {
             baudRate: parseInt(adapter.config.baud, 10) || 19200,
         });
         serial.on('open', () => {
             adapter.setState('info.connection', true, true);
-            /*serial.on('data', (data) => {
-                adapter.log.debug(JSON.stringify(data));
-                parse(data);
-            });*/
             parser = serial.pipe(new InterByteTimeout({maxBufferSize: 512, interval: 500}));
             parser.on('data', (data) => {
                 adapter.log.debug(JSON.stringify(data));
@@ -62,15 +84,14 @@ function main(){
             });
             pollInterval && clearInterval(pollInterval);
             pollInterval = setInterval(() => {
+                let cmd;
                 if (firststart){
                     firststart = false;
-                    cmd = [0x31, adapter.config.address, 0x10];
+                    cmd = [0x31, obj.address, 0x10];
                 } else {
-                    cmd = [0x31, adapter.config.address, 0x06];
+                    cmd = [0x31, obj.address, 0x06];
                 }
-                const crc = getCRC(cmd);
-                cmd = Buffer.from(cmd.concat(crc));
-                serial.write(cmd);
+                send(cmd);
             }, 5000);
         });
     }
@@ -79,16 +100,16 @@ function main(){
 function parse(data){
     adapter.log.debug('Received = ' + data.toString('hex'));
     //data = Buffer.from([0x3E, 0x03, 0x06, 0x30, 0x10, 0x20, 0x20, 0x30, 0xe7]);
-    //data = Buffer.from([0x3e,0x03,0x10,0x4c,0x4c,0x53,0x20,0x33,0x30,0x31,0x36,0x30,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x4c,0x4c,0x53,0x20,0x33,0x2e,0x39,0x2e,0x31,0x2e,0x32,0x00,0x03,0x0a,0x00,0x00,0xff,0x0f,0xb3,0xfd,0x00,0xb4,0x2c,0x01,0x01]);
-    
+    data = Buffer.from([0x3e, 0x03, 0x10, 0x4c, 0x4c, 0x53, 0x20, 0x33, 0x30, 0x31, 0x36, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x4c, 0x53, 0x20, 0x33, 0x2e, 0x39, 0x2e, 0x31, 0x2e, 0x32, 0x00, 0x03, 0x0a, 0x00, 0x00, 0xff, 0x0f, 0xb3, 0xfd, 0x00, 0xb4, 0x2c, 0x01, 0x01]);
+
     const crc = getCRC(data.slice(0, data.length - 1));
     adapter.log.debug('Checksum = ' + crc.toString(16));
     if (crc === data[data.length - 1]){
         adapter.log.debug('Чек сумма совпала');
-        if (data[2] !== 0x10){
+        if (data[2] === 0x06){
             let temp = (data[3] & 0x7F);
             if ((data[3] & 0x80) > 0) temp = temp * -1;
-            
+
             const litr = ((data[5] << 8) | data[4]); //
             const in_min = ((0x00 << 8) | 0x00);  //Значения при тарировке минимум  // 0
             const in_max = ((0x0F << 8) | 0xFF);  //Значения при тарировке максимум // 4095
@@ -101,7 +122,7 @@ function parse(data){
             adapter.setState('temperature', temp, true);
             adapter.setState('relative_level', litr, true);
             adapter.setState('frequency_value', ((data[7] << 8) | data[6]), true);
-        } else {
+        } else if (data[2] === 0x10){
             obj.model = data.slice(3, 19).toString();
             obj.version = data.slice(19, 30).toString();
             obj.mode = data.readInt8(30);
@@ -109,8 +130,8 @@ function parse(data){
             obj.filter = data.readInt8(32);
             obj.min = data.readInt16LE(33);
             obj.max = data.readInt16LE(35);
-            obj.mind = Buffer.concat([data.slice(37, 40), Buffer.from([0x00])]).readInt32LE(0);
-            obj.maxd = Buffer.concat([data.slice(40, 43), Buffer.from([0x00])]).readInt32LE(0);
+            obj.CNT1 = Buffer.concat([data.slice(37, 40), Buffer.from([0x00])]).readInt32LE(0);
+            obj.CNT2 = Buffer.concat([data.slice(40, 43), Buffer.from([0x00])]).readInt32LE(0);
             adapter.setState('model', obj.model, true);
             adapter.setState('version', obj.version, true);
             adapter.setState('mode', obj.mode, true);
@@ -118,8 +139,8 @@ function parse(data){
             adapter.setState('filter', obj.filter, true);
             adapter.setState('min', obj.min, true);
             adapter.setState('max', obj.max, true);
-            adapter.setState('mind', obj.mind, true);
-            adapter.setState('maxd', obj.maxd, true);
+            adapter.setState('CNT1', obj.CNT1, true);
+            adapter.setState('CNT2', obj.CNT2, true);
         }
     }
 }

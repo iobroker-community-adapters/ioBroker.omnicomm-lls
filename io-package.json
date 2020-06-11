@@ -188,7 +188,20 @@
                 "name": "mode",
                 "type": "string",
                 "read": true,
-                "write": false,
+                "write": true,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "onPeriodData",
+            "type": "state",
+            "common": {
+                "role": "button",
+                "name": "onPeriodData",
+                "type": "boolean",
+                "read": true,
+                "write": true,
                 "def": false
             },
             "native": {}
@@ -201,7 +214,7 @@
                 "name": "interval",
                 "type": "string",
                 "read": true,
-                "write": false,
+                "write": true,
                 "def": false
             },
             "native": {}
@@ -214,7 +227,7 @@
                 "name": "filter",
                 "type": "string",
                 "read": true,
-                "write": false,
+                "write": true,
                 "def": false
             },
             "native": {}
@@ -246,11 +259,11 @@
             "native": {}
         },
         {
-            "_id": "mind",
+            "_id": "CNT1",
             "type": "state",
             "common": {
                 "role": "state",
-                "name": "mind",
+                "name": "CNT1",
                 "type": "string",
                 "read": true,
                 "write": false,
@@ -259,11 +272,11 @@
             "native": {}
         },
         {
-            "_id": "maxd",
+            "_id": "CNT2",
             "type": "state",
             "common": {
                 "role": "state",
-                "name": "maxd",
+                "name": "CNT2",
                 "type": "string",
                 "read": true,
                 "write": false,
