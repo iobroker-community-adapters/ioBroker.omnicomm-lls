@@ -153,6 +153,123 @@
                 "def": false
             },
             "native": {}
+        },
+        {
+            "_id": "model",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "model",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "version",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "version",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "mode",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "mode",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "interval",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "interval",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "filter",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "filter",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "min",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "min",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "max",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "max",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "mind",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "mind",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
+        },
+        {
+            "_id": "maxd",
+            "type": "state",
+            "common": {
+                "role": "state",
+                "name": "maxd",
+                "type": "string",
+                "read": true,
+                "write": false,
+                "def": false
+            },
+            "native": {}
         }
     ]
 }

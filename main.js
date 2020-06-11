@@ -1,7 +1,9 @@
 'use strict';
 const utils = require('@iobroker/adapter-core');
 const SerialPort = require('serialport');
-let adapter, serial, pollInterval, firststart = true, cmd;
+const InterByteTimeout = require('@serialport/parser-inter-byte-timeout');
+let adapter, serial, pollInterval, firststart = true, cmd, obj = {};
+let parser;
 
 function startAdapter(options){
     return adapter = utils.adapter(Object.assign({}, options, {
@@ -46,7 +48,12 @@ function main(){
         });
         serial.on('open', () => {
             adapter.setState('info.connection', true, true);
-            serial.on('data', (data) => {
+            /*serial.on('data', (data) => {
+                adapter.log.debug(JSON.stringify(data));
+                parse(data);
+            });*/
+            parser = serial.pipe(new InterByteTimeout({maxBufferSize: 512, interval: 500}));
+            parser.on('data', (data) => {
                 adapter.log.debug(JSON.stringify(data));
                 parse(data);
             });
@@ -72,6 +79,7 @@ function main(){
 function parse(data){
     adapter.log.debug('Received = ' + data.toString('hex'));
     //data = Buffer.from([0x3E, 0x03, 0x06, 0x30, 0x10, 0x20, 0x20, 0x30, 0xe7]);
+    data = Buffer.from([0x3e,0x03,0x10,0x4c,0x4c,0x53,0x20,0x33,0x30,0x31,0x36,0x30,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x4c,0x4c,0x53,0x20,0x33,0x2e,0x39,0x2e,0x31,0x2e,0x32,0x00,0x03,0x0a,0x00,0x00,0xff,0x0f,0xb3,0xfd,0x00,0xb4,0x2c,0x01,0x01]);
     
     const crc = getCRC(data.slice(0, data.length - 1));
     adapter.log.debug('Checksum = ' + crc.toString(16));
@@ -94,15 +102,24 @@ function parse(data){
             adapter.setState('relative_level', litr, true);
             adapter.setState('frequency_value', ((data[7] << 8) | data[6]), true);
         } else {
-            const name = toString(data.slice(3, 19));
-            const version = toString(data.slice(19, 30));
-            const mode = data.slice(30, 31);
-            const interval = data.slice(31, 32);
-            const filter = data.slice(32, 33);
-            const min = data.slice(33, 35);
-            const max = data.slice(35, 37);
-            const mind = data.slice(37, 40);
-            const maxd = data.slice(40, 43);
+            obj.model = data.slice(3, 19).toString();
+            obj.version = data.slice(19, 30).toString();
+            obj.mode = data.readInt8(30);
+            obj.interval = data.readInt8(31);
+            obj.filter = data.readInt8(32);
+            obj.min = data.readInt16LE(33);
+            obj.max = data.readInt16LE(35);
+            obj.mind = Buffer.concat([data.slice(37, 40), Buffer.from([0x00])]).readInt32LE(0);
+            obj.maxd = Buffer.concat([data.slice(40, 43), Buffer.from([0x00])]).readInt32LE(0);
+            adapter.setState('model', obj.model, true);
+            adapter.setState('version', obj.version, true);
+            adapter.setState('mode', obj.mode, true);
+            adapter.setState('interval', obj.interval, true);
+            adapter.setState('filter', obj.filter, true);
+            adapter.setState('min', obj.min, true);
+            adapter.setState('max', obj.max, true);
+            adapter.setState('mind', obj.mind, true);
+            adapter.setState('maxd', obj.maxd, true);
         }
     }
 }
