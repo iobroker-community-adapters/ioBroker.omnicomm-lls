@@ -11,6 +11,7 @@ function startAdapter(options){
         ready:       main,
         unload:      (callback) => {
             try {
+                pollInterval && clearInterval(pollInterval);
                 serial.pause();
                 serial.close();
                 adapter.log.info('cleaned everything up...');
@@ -92,7 +93,7 @@ function main(){
                     cmd = [0x31, obj.address, 0x06];
                 }
                 send(cmd);
-            }, 5000);
+            }, adapter.config.pollTime || 5000);
         });
     }
 }

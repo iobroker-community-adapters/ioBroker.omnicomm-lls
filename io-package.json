@@ -74,7 +74,8 @@
         "address": 1,
         "minlevel": 0,
         "maxlevel": 4095,
-        "filtering": ""
+        "filtering": "",
+        "pollTime": 5000
         
     },
     "objects": [],
