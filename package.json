@@ -1,6 +1,6 @@
 {
   "name": "iobroker.omnicomm-lls",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Get data Omnicomm LLS fuel sensors",
   "author": {
     "name": "instalator",
