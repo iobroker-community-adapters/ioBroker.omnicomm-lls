@@ -18,7 +18,7 @@ Get data Omnicomm LLS fuel sensors
 
 ## Changelog
 
-### 0.0.5
+### 0.0.6
 * (instalator) initial release
 
 ## License
