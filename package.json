@@ -18,7 +18,7 @@
     "url": "https://github.com/instalator/ioBroker.omnicomm-lls"
   },
   "dependencies": {
-    "@iobroker/adapter-core": "^2.6.8",
+    "@iobroker/adapter-core": "^3.0.3",
     "serialport": "^9.0.0",
     "@serialport/parser-inter-byte-timeout": "^8.0.6"
   },
