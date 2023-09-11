@@ -17,6 +17,9 @@
     "type": "git",
     "url": "https://github.com/instalator/ioBroker.omnicomm-lls"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@iobroker/adapter-core": "^2.6.8",
     "serialport": "^9.0.0",
