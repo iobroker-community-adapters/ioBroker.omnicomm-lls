@@ -26,7 +26,7 @@
     "@serialport/parser-inter-byte-timeout": "^8.0.6"
   },
   "devDependencies": {
-    "@iobroker/testing": "^4.1.0",
+    "@iobroker/testing": "^4.1.1",
     "@types/chai": "^4.3.12",
     "@types/chai-as-promised": "^7.1.7",
     "@types/gulp": "^4.0.16",
