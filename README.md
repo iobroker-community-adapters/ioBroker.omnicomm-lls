@@ -22,7 +22,7 @@ Get data Omnicomm LLS fuel sensors
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
-### 0.1.0 (2024-04-21)
+### **WORK IN PROGRESS**
 - (mcm1957) Adapter requires node.js >= 18 and js-controller >= 5 now
 - (mcm1957) Dependencies have been updated
 
