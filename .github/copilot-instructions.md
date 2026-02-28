@@ -1,9 +1,37 @@
 # ioBroker Adapter Development with GitHub Copilot
 
-**Version:** 0.4.2
+**Version:** 0.5.7
 **Template Source:** https://github.com/DrozmotiX/ioBroker-Copilot-Instructions
 
 This file contains instructions and best practices for GitHub Copilot when working on ioBroker adapter development.
+
+---
+
+## 📑 Table of Contents
+
+1. [Project Context](#project-context)
+2. [Code Quality & Standards](#code-quality--standards)
+   - [Code Style Guidelines](#code-style-guidelines)
+   - [ESLint Configuration](#eslint-configuration)
+3. [Testing](#testing)
+   - [Unit Testing](#unit-testing)
+   - [Integration Testing](#integration-testing)
+   - [API Testing with Credentials](#api-testing-with-credentials)
+4. [Development Best Practices](#development-best-practices)
+   - [Dependency Management](#dependency-management)
+   - [HTTP Client Libraries](#http-client-libraries)
+   - [Error Handling](#error-handling)
+5. [Admin UI Configuration](#admin-ui-configuration)
+   - [JSON-Config Setup](#json-config-setup)
+   - [Translation Management](#translation-management)
+6. [Documentation](#documentation)
+   - [README Updates](#readme-updates)
+   - [Changelog Management](#changelog-management)
+7. [CI/CD & GitHub Actions](#cicd--github-actions)
+   - [Workflow Configuration](#workflow-configuration)
+   - [Testing Integration](#testing-integration)
+
+---
 
 ## Project Context
 
@@ -27,6 +55,86 @@ You are working on an ioBroker adapter. ioBroker is an integration platform for 
 - Implement proper error handling for communication failures
 - Support configurable polling intervals to prevent sensor overload
 - Convert raw sensor values to meaningful fuel level measurements
+
+---
+
+## Code Quality & Standards
+
+### Code Style Guidelines
+
+- Follow JavaScript/TypeScript best practices
+- Use async/await for asynchronous operations
+- Implement proper resource cleanup in `unload()` method
+- Use semantic versioning for adapter releases
+- Include proper JSDoc comments for public methods
+- Handle Buffer operations safely for binary serial data
+- Implement proper error boundaries for hardware communication
+
+**Timer and Resource Cleanup Example:**
+```javascript
+private connectionTimer?: NodeJS.Timeout;
+
+async onReady() {
+  this.connectionTimer = setInterval(() => this.checkConnection(), 30000);
+}
+
+onUnload(callback) {
+  try {
+    if (this.connectionTimer) {
+      clearInterval(this.connectionTimer);
+      this.connectionTimer = undefined;
+    }
+    callback();
+  } catch (e) {
+    callback();
+  }
+}
+```
+
+### ESLint Configuration
+
+**CRITICAL:** ESLint validation must run FIRST in your CI/CD pipeline, before any other tests. This "lint-first" approach catches code quality issues early.
+
+#### Setup
+```bash
+npm install --save-dev eslint @iobroker/eslint-config
+```
+
+#### Configuration (.eslintrc.json)
+```json
+{
+  "extends": "@iobroker/eslint-config",
+  "rules": {
+    // Add project-specific rule overrides here if needed
+  }
+}
+```
+
+#### Package.json Scripts
+```json
+{
+  "scripts": {
+    "lint": "eslint --max-warnings 0 .",
+    "lint:fix": "eslint . --fix"
+  }
+}
+```
+
+#### Best Practices
+1. ✅ Run ESLint before committing — fix ALL warnings, not just errors
+2. ✅ Use `lint:fix` for auto-fixable issues
+3. ✅ Don't disable rules without documentation
+4. ✅ Lint all relevant files (main code, tests, build scripts)
+5. ✅ Keep `@iobroker/eslint-config` up to date
+6. ✅ **ESLint warnings are treated as errors in CI** (`--max-warnings 0`). The `lint` script above already includes this flag — run `npm run lint` to match CI behavior locally
+
+#### Common Issues
+- **Unused variables**: Remove or prefix with underscore (`_variable`)
+- **Missing semicolons**: Run `npm run lint:fix`
+- **Indentation**: Use 4 spaces (ioBroker standard)
+- **console.log**: Replace with `adapter.log.debug()` or remove
+
+---
 
 ## Testing
 
@@ -480,91 +588,79 @@ suite('Serial Communication Error Handling', (getHarness) => {
 });
 ```
 
-#### Key Integration Testing Rules
+#### Key Rules
 
-1. **NEVER test API URLs directly** - Let the adapter handle API calls
-2. **ALWAYS use the harness** - `getHarness()` provides the testing environment  
-3. **Configure via objects** - Use `harness.objects.setObject()` to set adapter configuration
-4. **Start properly** - Use `harness.startAdapterAndWait()` to start the adapter
-5. **Check states** - Use `harness.states.getState()` to verify results
-6. **Use timeouts** - Allow time for async operations with appropriate timeouts
-7. **Test real workflow** - Initialize → Configure → Start → Verify States
+1. ✅ Use `@iobroker/testing` framework
+2. ✅ Configure via `harness.objects.setObject()`
+3. ✅ Start via `harness.startAdapterAndWait()`
+4. ✅ Verify states via `harness.states.getState()`
+5. ✅ Allow proper timeouts for async operations
+6. ❌ NEVER test API URLs directly
+7. ❌ NEVER bypass the harness system
 
 #### Workflow Dependencies
+
 Integration tests should run ONLY after lint and adapter tests pass:
 
 ```yaml
 integration-tests:
   needs: [check-and-lint, adapter-tests]
-  runs-on: ubuntu-latest
-  steps:
-    - name: Run integration tests
-      run: npx mocha test/integration-*.js --exit
+  runs-on: ubuntu-22.04
 ```
 
-#### What NOT to Do
-❌ Direct API testing: `axios.get('https://api.example.com')`
-❌ Mock adapters: `new MockAdapter()`  
-❌ Direct internet calls in tests
-❌ Bypassing the harness system
-
-#### What TO Do
-✅ Use `@iobroker/testing` framework
-✅ Configure via `harness.objects.setObject()`
-✅ Start via `harness.startAdapterAndWait()`
-✅ Test complete adapter lifecycle
-✅ Verify states via `harness.states.getState()`
-✅ Allow proper timeouts for async operations
-
 ### API Testing with Credentials
-For adapters that connect to external APIs requiring authentication, implement comprehensive credential testing:
+
+For adapters connecting to external APIs requiring authentication:
 
 #### Password Encryption for Integration Tests
-When creating integration tests that need encrypted passwords (like those marked as `encryptedNative` in io-package.json):
 
-1. **Read system secret**: Use `harness.objects.getObjectAsync("system.config")` to get `obj.native.secret`
-2. **Apply XOR encryption**: Implement the encryption algorithm:
-   ```javascript
-   async function encryptPassword(harness, password) {
-       const systemConfig = await harness.objects.getObjectAsync("system.config");
-       if (!systemConfig || !systemConfig.native || !systemConfig.native.secret) {
-           throw new Error("Could not retrieve system secret for password encryption");
-       }
-       
-       const secret = systemConfig.native.secret;
-       let result = '';
-       for (let i = 0; i < password.length; ++i) {
-           result += String.fromCharCode(secret[i % secret.length].charCodeAt(0) ^ password.charCodeAt(i));
-       }
-       return result;
-   }
-   ```
-3. **Store encrypted password**: Set the encrypted result in adapter config, not the plain text
-4. **Result**: Adapter will properly decrypt and use credentials, enabling full API connectivity testing
+```javascript
+async function encryptPassword(harness, password) {
+    const systemConfig = await harness.objects.getObjectAsync("system.config");
+    if (!systemConfig?.native?.secret) {
+        throw new Error("Could not retrieve system secret for password encryption");
+    }
+
+    const secret = systemConfig.native.secret;
+    let result = '';
+    for (let i = 0; i < password.length; ++i) {
+        result += String.fromCharCode(secret[i % secret.length].charCodeAt(0) ^ password.charCodeAt(i));
+    }
+    return result;
+}
+```
 
 #### Demo Credentials Testing Pattern
-- Use provider demo credentials when available (e.g., `demo@api-provider.com` / `demo`)
-- Create separate test file (e.g., `test/integration-demo.js`) for credential-based tests
-- Add npm script: `"test:integration-demo": "mocha test/integration-demo --exit"`
-- Implement clear success/failure criteria with recognizable log messages
-- Expected success pattern: Look for specific adapter initialization messages
-- Test should fail clearly with actionable error messages for debugging
 
-#### Enhanced Test Failure Handling
+- Use provider demo credentials when available (e.g., `demo@api-provider.com` / `demo`)
+- Create separate test file: `test/integration-demo.js`
+- Add npm script: `"test:integration-demo": "mocha test/integration-demo --exit"`
+- Implement clear success/failure criteria
+
+**Example Implementation:**
 ```javascript
 it("Should connect to API with demo credentials", async () => {
-    // ... setup and encryption logic ...
-    
-    const connectionState = await harness.states.getStateAsync("adapter.0.info.connection");
-    
-    if (connectionState && connectionState.val === true) {
+    const encryptedPassword = await encryptPassword(harness, "demo_password");
+
+    await harness.changeAdapterConfig("your-adapter", {
+        native: {
+            username: "demo@provider.com",
+            password: encryptedPassword,
+        }
+    });
+
+    await harness.startAdapter();
+    await new Promise(resolve => setTimeout(resolve, 60000));
+
+    const connectionState = await harness.states.getStateAsync("your-adapter.0.info.connection");
+
+    if (connectionState?.val === true) {
         console.log("✅ SUCCESS: API connection established");
         return true;
     } else {
-        throw new Error("API Test Failed: Expected API connection to be established with demo credentials. " +
-            "Check logs above for specific API errors (DNS resolution, 401 Unauthorized, network issues, etc.)");
+        throw new Error("API Test Failed: Expected API connection. Check logs for API errors.");
     }
-}).timeout(120000); // Extended timeout for API calls
+}).timeout(120000);
 ```
 
 ### Performance Testing for Omnicomm LLS
@@ -573,115 +669,62 @@ it("Should connect to API with demo credentials", async () => {
 - Test multiple sensor handling on same serial connection
 - Monitor adapter performance with different baud rates
 
-## README Updates
+---
 
-### Required Sections
-When updating README.md files, ensure these sections are present and well-documented:
+## Development Best Practices
 
-1. **Installation** - Clear npm/ioBroker admin installation steps
-2. **Configuration** - Detailed configuration options with examples
-3. **Usage** - Practical examples and use cases
-4. **Changelog** - Version history and changes (use "## **WORK IN PROGRESS**" section for ongoing changes following AlCalzone release-script standard)
-5. **License** - License information (typically MIT for ioBroker adapters)
-6. **Support** - Links to issues, discussions, and community support
+### Dependency Management
 
-### Documentation Standards
-- Use clear, concise language
-- Include code examples for configuration
-- Add screenshots for admin interface when applicable
-- Maintain multilingual support (at minimum English and German)
-- When creating PRs, add entries to README under "## **WORK IN PROGRESS**" section following ioBroker release script standard
-- Always reference related issues in commits and PR descriptions (e.g., "solves #xx" or "fixes #xx")
-
-### Mandatory README Updates for PRs
-For **every PR or new feature**, always add a user-friendly entry to README.md:
-
-- Add entries under `## **WORK IN PROGRESS**` section before committing
-- Use format: `* (author) **TYPE**: Description of user-visible change`
-- Types: **NEW** (features), **FIXED** (bugs), **ENHANCED** (improvements), **TESTING** (test additions), **CI/CD** (automation)
-- Focus on user impact, not technical implementation details
-- Example: `* (DutchmanNL) **FIXED**: Adapter now properly validates login credentials instead of always showing "credentials missing"`
-
-### Documentation Workflow Standards
-- **Mandatory README updates**: Establish requirement to update README.md for every PR/feature
-- **Standardized documentation**: Create consistent format and categories for changelog entries
-- **Enhanced development workflow**: Integrate documentation requirements into standard development process
-
-### Changelog Management with AlCalzone Release-Script
-Follow the [AlCalzone release-script](https://github.com/AlCalzone/release-script) standard for changelog management:
-
-#### Format Requirements
-- Always use `## **WORK IN PROGRESS**` as the placeholder for new changes
-- Add all PR/commit changes under this section until ready for release
-- Never modify version numbers manually - only when merging to main branch
-- Maintain this format in README.md or CHANGELOG.md:
-
-```markdown
-# Changelog
-
-<!--
-  Placeholder for the next version (at the beginning of the line):
-  ## **WORK IN PROGRESS**
--->
-
-## **WORK IN PROGRESS**
-
--   Did some changes
--   Did some more changes
-
-## v0.1.0 (2023-01-01)
-Initial release
-```
-
-#### Workflow Process
-- **During Development**: All changes go under `## **WORK IN PROGRESS**`
-- **For Every PR**: Add user-facing changes to the WORK IN PROGRESS section
-- **Before Merge**: Version number and date are only added when merging to main
-- **Release Process**: The release-script automatically converts the placeholder to the actual version
-
-#### Change Entry Format
-Use this consistent format for changelog entries:
-- `- (author) **TYPE**: User-friendly description of the change`
-- Types: **NEW** (features), **FIXED** (bugs), **ENHANCED** (improvements)
-- Focus on user impact, not technical implementation details
-- Reference related issues: "fixes #XX" or "solves #XX"
-
-#### Example Entry
-```markdown
-## **WORK IN PROGRESS**
-
-- (DutchmanNL) **FIXED**: Adapter now properly validates login credentials instead of always showing "credentials missing" (fixes #25)
-- (DutchmanNL) **NEW**: Added support for device discovery to simplify initial setup
-```
-
-## Dependency Updates
-
-### Package Management
-- Always use `npm` for dependency management in ioBroker adapters
-- When working on new features in a repository with an existing package-lock.json file, use `npm ci` to install dependencies. Use `npm install` only when adding or updating dependencies.
+- Always use `npm` for dependency management
+- Use `npm ci` for installing existing dependencies (respects package-lock.json)
+- Use `npm install` only when adding or updating dependencies
 - Keep dependencies minimal and focused
-- Only update dependencies to latest stable versions when necessary or in separate Pull Requests. Avoid updating dependencies when adding features that don't require these updates.
-- When you modify `package.json`:
-  1. Run `npm install` to update and sync `package-lock.json`.
-  2. If `package-lock.json` was updated, commit both `package.json` and `package-lock.json`.
+- Only update dependencies in separate Pull Requests
 
-### Dependency Best Practices
+**When modifying package.json:**
+1. Run `npm install` to sync package-lock.json
+2. Commit both package.json and package-lock.json together
+
+**Best Practices:**
 - Prefer built-in Node.js modules when possible
 - Use `@iobroker/adapter-core` for adapter base functionality
 - Avoid deprecated packages
-- Document any specific version requirements
+- Document specific version requirements
 
-## Error Handling and Resilience
+### HTTP Client Libraries
 
-### General Error Patterns
+- **Preferred:** Use native `fetch` API (Node.js 20+ required)
+- **Avoid:** `axios` unless specific features are required
+
+**Example with fetch:**
+```javascript
+try {
+  const response = await fetch('https://api.example.com/data');
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const data = await response.json();
+} catch (error) {
+  this.log.error(`API request failed: ${error.message}`);
+}
+```
+
+**Other Recommendations:**
+- **Logging:** Use adapter built-in logging (`this.log.*`)
+- **Scheduling:** Use adapter built-in timers and intervals
+- **File operations:** Use Node.js `fs/promises`
+- **Configuration:** Use adapter config system
+
+### Error Handling
+
 - Always catch and log errors appropriately
 - Use adapter log levels (error, warn, info, debug)
-- Provide meaningful, user-friendly error messages that help users understand what went wrong
+- Provide meaningful, user-friendly error messages
 - Handle network failures gracefully
 - Implement retry mechanisms where appropriate
-- Always clean up timers, intervals, and other resources in the `unload()` method
+- Always clean up timers, intervals, and resources in `unload()` method
 
-### Example Error Handling:
+**General Error Handling Example:**
 ```javascript
 try {
   await this.connectToDevice();
@@ -692,33 +735,8 @@ try {
 }
 ```
 
-### Timer and Resource Cleanup:
-```javascript
-// In your adapter class
-private connectionTimer?: NodeJS.Timeout;
+**Serial Communication Error Patterns for Omnicomm LLS:**
 
-async onReady() {
-  this.connectionTimer = setInterval(() => {
-    this.checkConnection();
-  }, 30000);
-}
-
-onUnload(callback) {
-  try {
-    // Clean up timers and intervals
-    if (this.connectionTimer) {
-      clearInterval(this.connectionTimer);
-      this.connectionTimer = undefined;
-    }
-    // Close connections, clean up resources
-    callback();
-  } catch (e) {
-    callback();
-  }
-}
-```
-
-### Serial Communication Error Patterns for Omnicomm LLS
 Handle these specific error scenarios for Omnicomm LLS sensors:
 - Serial port connection failures
 - Sensor response timeouts
@@ -745,7 +763,7 @@ try {
 }
 ```
 
-### Resource Management for Serial Connections
+**Resource Management for Serial Connections:**
 ```javascript
 async unload(callback) {
   try {
@@ -754,14 +772,14 @@ async unload(callback) {
       clearTimeout(this.pollTimer);
       this.pollTimer = undefined;
     }
-    
+
     // Properly close serial port
     if (this.serialPort && this.serialPort.isOpen) {
       await new Promise((resolve) => {
         this.serialPort.close(resolve);
       });
     }
-    
+
     this.serialPort = undefined;
     callback();
   } catch (e) {
@@ -770,29 +788,39 @@ async unload(callback) {
 }
 ```
 
-## Logging Best Practices
+---
 
-### Omnicomm LLS Specific Logging
-- Use debug level for raw sensor data and communication details
-- Use info level for successful sensor readings and connection status
-- Use warn level for timeout or retry situations
-- Use error level for hardware failures or configuration issues
+## Admin UI Configuration
 
-```javascript
-// Good logging examples for fuel sensors
-this.log.debug(`Sending command to sensor ${address}: ${Buffer.from(command).toString('hex')}`);
-this.log.info(`Fuel level reading from sensor ${address}: ${fuelLevel}L`);
-this.log.warn(`Sensor ${address} response timeout, retrying in ${retryDelay}ms`);
-this.log.error(`Failed to connect to serial port ${comPort}: ${error.message}`);
+### JSON-Config Setup
+
+Use JSON-Config format for modern ioBroker admin interfaces.
+
+**Example Structure:**
+```json
+{
+  "type": "panel",
+  "items": {
+    "host": {
+      "type": "text",
+      "label": "Host address",
+      "help": "IP address or hostname of the device"
+    }
+  }
+}
 ```
 
-## Configuration Management
+**Guidelines:**
+- ✅ Use consistent naming conventions
+- ✅ Provide sensible default values
+- ✅ Include validation for required fields
+- ✅ Add tooltips for complex options
+- ✅ Ensure translations for all supported languages (minimum English and German)
+- ✅ Write end-user friendly labels, avoid technical jargon
 
-### JSON Config for Serial Parameters
-Create proper JSON config structure for serial communication settings:
+### JSON Config for Serial Parameters (Omnicomm LLS)
 
-```javascript
-// In jsonConfig.json
+```json
 {
   "type": "panel",
   "items": {
@@ -833,102 +861,185 @@ Create proper JSON config structure for serial communication settings:
 }
 ```
 
-## JSON-Config Admin Instructions
+### Translation Management
 
-### Configuration Schema
-When creating admin configuration interfaces:
+**CRITICAL:** Translation files must stay synchronized with `admin/jsonConfig.json`. Orphaned keys or missing translations cause UI issues and PR review delays.
 
-- Use JSON-Config format for modern ioBroker admin interfaces
-- Provide clear labels and help text for all configuration options
-- Include input validation and error messages
-- Group related settings logically
-- Example structure:
-  ```json
-  {
-    "type": "panel",
-    "items": {
-      "host": {
-        "type": "text",
-        "label": "Host address",
-        "help": "IP address or hostname of the device"
-      }
-    }
-  }
-  ```
+#### Overview
+- **Location:** `admin/i18n/{lang}/translations.json` for 11 languages (de, en, es, fr, it, nl, pl, pt, ru, uk, zh-cn)
+- **Source of truth:** `admin/jsonConfig.json` - all `label` and `help` properties must have translations
+- **Command:** `npm run translate` - auto-generates translations but does NOT remove orphaned keys
+- **Formatting:** English uses tabs, other languages use 4 spaces
 
-### Admin Interface Guidelines
-- Use consistent naming conventions
-- Provide sensible default values
-- Include validation for required fields
-- Add tooltips for complex configuration options
-- Ensure translations are available for all supported languages (minimum English and German)
-- Write end-user friendly labels and descriptions, avoiding technical jargon where possible
+#### Critical Rules
+1. ✅ Keys must match exactly with jsonConfig.json
+2. ✅ No orphaned keys in translation files
+3. ✅ All translations must be in native language (no English fallbacks)
+4. ✅ Keys must be sorted alphabetically
 
-## Best Practices for Dependencies
+#### Workflow for Translation Updates
 
-### HTTP Client Libraries
-- **Preferred:** Use native `fetch` API (Node.js 20+ required for adapters; built-in since Node.js 18)
-- **Avoid:** `axios` unless specific features are required (reduces bundle size)
+**When modifying admin/jsonConfig.json:**
 
-### Example with fetch:
-```javascript
-try {
-  const response = await fetch('https://api.example.com/data');
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
-  const data = await response.json();
-} catch (error) {
-  this.log.error(`API request failed: ${error.message}`);
-}
+1. Make your changes to labels/help texts
+2. Run automatic translation: `npm run translate`
+3. Run validation: `node scripts/validate-translations.js`
+4. Remove orphaned keys manually from all translation files
+5. Add missing translations in native languages
+6. Run: `npm run lint && npm run test`
+
+#### Translation Checklist
+
+Before committing changes to admin UI or translations:
+1. ✅ No orphaned keys in any translation file
+2. ✅ All translations in native language
+3. ✅ Keys alphabetically sorted
+4. ✅ `npm run lint` passes
+5. ✅ `npm run test` passes
+
+---
+
+## Documentation
+
+### README Updates
+
+#### Required Sections
+1. **Installation** - Clear npm/ioBroker admin installation steps
+2. **Configuration** - Detailed configuration options with examples
+3. **Usage** - Practical examples and use cases
+4. **Changelog** - Version history (use "## **WORK IN PROGRESS**" for ongoing changes)
+5. **License** - License information (typically MIT for ioBroker adapters)
+6. **Support** - Links to issues, discussions, community support
+
+#### Documentation Standards
+- Use clear, concise language
+- Include code examples for configuration
+- Add screenshots for admin interface when applicable
+- Maintain multilingual support (minimum English and German)
+- Always reference issues in commits and PRs (e.g., "fixes #xx")
+
+#### Mandatory README Updates for PRs
+
+For **every PR or new feature**, always add a user-friendly entry to README.md:
+
+- Add entries under `## **WORK IN PROGRESS**` section
+- Use format: `* (author) **TYPE**: Description of user-visible change`
+- Types: **NEW** (features), **FIXED** (bugs), **ENHANCED** (improvements), **TESTING** (test additions), **CI/CD** (automation)
+- Focus on user impact, not technical details
+
+**Example:**
+```markdown
+## **WORK IN PROGRESS**
+
+* (DutchmanNL) **FIXED**: Adapter now properly validates login credentials (fixes #25)
+* (DutchmanNL) **NEW**: Added device discovery to simplify initial setup
 ```
 
-### Other Dependency Recommendations
-- **Logging:** Use adapter built-in logging (`this.log.*`)
-- **Scheduling:** Use adapter built-in timers and intervals
-- **File operations:** Use Node.js `fs/promises` for async file operations
-- **Configuration:** Use adapter config system rather than external config libraries
+### Changelog Management
 
-## Code Style and Standards
+Follow the [AlCalzone release-script](https://github.com/AlCalzone/release-script) standard.
 
-- Follow JavaScript/TypeScript best practices
-- Use async/await for asynchronous operations
-- Implement proper resource cleanup in `unload()` method
-- Use semantic versioning for adapter releases
-- Include proper JSDoc comments for public methods
-- Handle Buffer operations safely for binary serial data
-- Implement proper error boundaries for hardware communication
+#### Format Requirements
 
-## CI/CD and Testing Integration
+```markdown
+# Changelog
 
-### GitHub Actions for Hardware Testing
+<!--
+  Placeholder for the next version (at the beginning of the line):
+  ## **WORK IN PROGRESS**
+-->
+
+## **WORK IN PROGRESS**
+
+- (author) **NEW**: Added new feature X
+- (author) **FIXED**: Fixed bug Y (fixes #25)
+
+## v0.1.0 (2023-01-01)
+Initial release
+```
+
+#### Workflow Process
+- **During Development:** All changes go under `## **WORK IN PROGRESS**`
+- **For Every PR:** Add user-facing changes to WORK IN PROGRESS section
+- **Before Merge:** Version number and date added when merging to main
+- **Release Process:** Release-script automatically converts placeholder to actual version
+
+#### Change Entry Format
+- Format: `- (author) **TYPE**: User-friendly description`
+- Types: **NEW**, **FIXED**, **ENHANCED**
+- Focus on user impact, not technical implementation
+- Reference issues: "fixes #XX" or "solves #XX"
+
+---
+
+## CI/CD & GitHub Actions
+
+### Workflow Configuration
+
+#### GitHub Actions Best Practices
+
+**Must use ioBroker official testing actions:**
+- `ioBroker/testing-action-check@v1` for lint and package validation
+- `ioBroker/testing-action-adapter@v1` for adapter tests
+- `ioBroker/testing-action-deploy@v1` for automated releases with Trusted Publishing (OIDC)
+
+**Configuration:**
+- **Node.js versions:** Test on 20.x, 22.x, 24.x
+- **Platform:** Use ubuntu-22.04
+- **Automated releases:** Deploy to npm on version tags (requires NPM Trusted Publishing)
+
+#### Critical: Lint-First Validation Workflow
+
+**ALWAYS run ESLint checks BEFORE other tests.** Benefits:
+- Catches code quality issues immediately
+- Prevents wasting CI resources on tests that would fail due to linting errors
+- Provides faster feedback to developers
+
+**Workflow Dependency Configuration:**
+```yaml
+jobs:
+  check-and-lint:
+    # Runs ESLint and package validation
+    # Uses: ioBroker/testing-action-check@v1
+
+  adapter-tests:
+    needs: [check-and-lint]  # Wait for linting to pass
+
+  integration-tests:
+    needs: [check-and-lint, adapter-tests]  # Wait for both
+```
+
+### Testing Integration
+
+#### GitHub Actions for Hardware Simulation
+
 Since this adapter requires serial hardware, implement separate CI/CD jobs for hardware simulation:
 
 ```yaml
 # Tests hardware simulation with mock serial data
 hardware-simulation-tests:
   if: contains(github.event.head_commit.message, '[skip ci]') == false
-  
+
   runs-on: ubuntu-22.04
-  
+
   steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Use Node.js 20.x
       uses: actions/setup-node@v4
       with:
         node-version: 20.x
         cache: 'npm'
-        
+
     - name: Install dependencies
       run: npm ci
-      
+
     - name: Run hardware simulation tests
       run: npm run test:integration-hardware
 ```
 
-### CI/CD Best Practices for Serial Hardware
+#### CI/CD Best Practices for Serial Hardware
 - Run hardware simulation tests separately from main test suite
 - Use mock serial data for reproducible testing
 - Don't make hardware tests required for deployment
@@ -936,19 +1047,18 @@ hardware-simulation-tests:
 - Use appropriate timeouts for serial operations (30+ seconds)
 - Test with various sensor configurations and error scenarios
 
-### Package.json Script Integration
-Add dedicated script for hardware simulation testing:
+#### Package.json Integration
 ```json
 {
   "scripts": {
+    "test:integration-demo": "mocha test/integration-demo --exit",
     "test:integration-hardware": "mocha test/integration-hardware --exit --timeout 30000"
   }
 }
 ```
 
-### Practical Example: Complete Hardware Simulation Testing Implementation
+#### Practical Example: Hardware Simulation Testing
 
-#### test/integration-hardware.js
 ```javascript
 const path = require("path");
 const { tests } = require("@iobroker/testing");
@@ -960,42 +1070,40 @@ const MOCK_SENSOR_RESPONSES = {
     error: Buffer.from([0x01, 0x83, 0x02, 0xC0, 0xF1]) // Error response
 };
 
-// Run integration tests with hardware simulation
 tests.integration(path.join(__dirname, ".."), {
     defineAdditionalTests({ suite }) {
         suite("Hardware Simulation Testing", (getHarness) => {
             let harness;
-            
+
             before(() => {
                 harness = getHarness();
             });
 
             it("Should handle serial communication with mock sensor responses", async () => {
                 console.log("Setting up mock serial communication...");
-                
+
                 if (harness.isAdapterRunning()) {
                     await harness.stopAdapter();
                 }
-                
+
                 await harness.changeAdapterConfig("omnicomm-lls", {
                     native: {
                         comPort: "/dev/ttyUSB0",
                         baud: 9600,
                         address: 1,
                         pollTime: 5000,
-                        // Test mode flag for mock responses
                         testMode: true
                     }
                 });
 
                 console.log("Starting adapter with hardware simulation...");
                 await harness.startAdapter();
-                
+
                 // Wait for serial initialization and first poll
                 await new Promise(resolve => setTimeout(resolve, 15000));
-                
+
                 const fuelLevelState = await harness.states.getStateAsync("omnicomm-lls.0.fuelLevel");
-                
+
                 if (fuelLevelState && typeof fuelLevelState.val === 'number') {
                     console.log("✅ SUCCESS: Fuel level data received from simulated sensor");
                     return true;
@@ -1008,6 +1116,8 @@ tests.integration(path.join(__dirname, ".."), {
     }
 });
 ```
+
+---
 
 ## Security Considerations for Serial Communication
 
@@ -1026,12 +1136,28 @@ function validateSerialPort(portPath) {
         /^\/dev\/ttyS\d+$/,   // Linux native serial
         /^COM\d+$/            // Windows COM ports
     ];
-    
+
     return validPatterns.some(pattern => pattern.test(portPath));
 }
 ```
 
+---
+
 ## Development Patterns for Omnicomm LLS
+
+### Logging Best Practices
+- Use debug level for raw sensor data and communication details
+- Use info level for successful sensor readings and connection status
+- Use warn level for timeout or retry situations
+- Use error level for hardware failures or configuration issues
+
+```javascript
+// Good logging examples for fuel sensors
+this.log.debug(`Sending command to sensor ${address}: ${Buffer.from(command).toString('hex')}`);
+this.log.info(`Fuel level reading from sensor ${address}: ${fuelLevel}L`);
+this.log.warn(`Sensor ${address} response timeout, retrying in ${retryDelay}ms`);
+this.log.error(`Failed to connect to serial port ${comPort}: ${error.message}`);
+```
 
 ### Sensor Data Processing Pipeline
 ```javascript
@@ -1041,18 +1167,18 @@ async processOmnicommData(rawData) {
         if (!this.validateCRC(rawData)) {
             throw new Error('Invalid CRC checksum');
         }
-        
+
         // 2. Parse sensor-specific data format
         const parsedData = this.parseOmnicommFrame(rawData);
-        
+
         // 3. Convert to meaningful units
         const fuelLevel = this.convertToFuelLevel(parsedData.rawValue);
         const temperature = this.convertToTemperature(parsedData.tempValue);
-        
+
         // 4. Update states with proper error handling
         await this.setStateAsync('fuelLevel', fuelLevel, true);
         await this.setStateAsync('temperature', temperature, true);
-        
+
         return { fuelLevel, temperature };
     } catch (error) {
         this.log.error(`Failed to process sensor data: ${error.message}`);
@@ -1076,5 +1202,3 @@ async pollAllSensors() {
     }
 }
 ```
-
-This comprehensive guide should help GitHub Copilot provide optimal suggestions for developing and maintaining the ioBroker omnicomm-lls adapter, with special attention to serial communication patterns, hardware simulation testing, and fuel sensor-specific requirements.
