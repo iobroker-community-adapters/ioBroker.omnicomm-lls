@@ -35,6 +35,8 @@ Get data Omnicomm LLS fuel sensors
 ### 0.0.7
 * (instalator) initial release
 
+[Older changelogs can be found there](CHANGELOG_OLD.md)
+
 ## License
 MIT License
 
