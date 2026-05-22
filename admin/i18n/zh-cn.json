@@ -1,0 +1,9 @@
+{
+  "address": "传感器地址",
+  "baud": "波特率",
+  "filtering": "过滤",
+  "maxlevel": "最大液位",
+  "minlevel": "最小液位",
+  "pollTime": "轮询时间（毫秒）",
+  "usbport": "港口"
+}

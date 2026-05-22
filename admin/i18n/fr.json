@@ -1,0 +1,9 @@
+{
+  "address": "Adresse du capteur",
+  "baud": "Baudrate",
+  "filtering": "Filtrage",
+  "maxlevel": "Niveau maximal",
+  "minlevel": "Niveau minimal",
+  "pollTime": "temps d'interrogation (ms)",
+  "usbport": "Port"
+}

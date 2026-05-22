@@ -1,0 +1,9 @@
+{
+  "address": "Sensor adres",
+  "baud": "Baudrate",
+  "filtering": "Filtering",
+  "maxlevel": "Maximaal niveau",
+  "minlevel": "Minimaal niveau",
+  "pollTime": "polling tijd (ms)",
+  "usbport": "Haven"
+}
