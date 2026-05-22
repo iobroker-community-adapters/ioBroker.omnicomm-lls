@@ -1,0 +1,9 @@
+{
+  "address": "Adres czujnika",
+  "baud": "Baudrate",
+  "filtering": "Filtrowanie",
+  "maxlevel": "Poziom maksymalny",
+  "minlevel": "Poziom minimalny",
+  "pollTime": "Czas odpytywania (ms)",
+  "usbport": "Port"
+}

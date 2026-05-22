@@ -1,0 +1,9 @@
+{
+  "address": "Sensoradresse",
+  "baud": "Baudrate",
+  "filtering": "Filterung",
+  "maxlevel": "Maximaler Füllstand",
+  "minlevel": "Minimaler Füllstand",
+  "pollTime": "Abrufzeit (ms)",
+  "usbport": "Hafen"
+}

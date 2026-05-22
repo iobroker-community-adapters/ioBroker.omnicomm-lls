@@ -1,0 +1,102 @@
+{
+  "type": "panel",
+  "items": {
+    "usbport": {
+      "type": "text",
+      "label": "usbport",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "baud": {
+      "type": "select",
+      "label": "baud",
+      "options": [
+        {
+          "label": "1200",
+          "value": 1200
+        },
+        {
+          "label": "2400",
+          "value": 2400
+        },
+        {
+          "label": "4800",
+          "value": 4800
+        },
+        {
+          "label": "9600",
+          "value": 9600
+        },
+        {
+          "label": "19200",
+          "value": 19200
+        },
+        {
+          "label": "38400",
+          "value": 38400
+        },
+        {
+          "label": "57600",
+          "value": 57600
+        },
+        {
+          "label": "115200",
+          "value": 115200
+        }
+      ],
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "address": {
+      "type": "number",
+      "label": "address",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "pollTime": {
+      "type": "number",
+      "label": "pollTime",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "minlevel": {
+      "type": "number",
+      "label": "minlevel",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "maxlevel": {
+      "type": "number",
+      "label": "maxlevel",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    },
+    "filtering": {
+      "type": "text",
+      "label": "filtering",
+      "xs": 12,
+      "sm": 6,
+      "md": 4,
+      "lg": 3,
+      "xl": 3
+    }
+  }
+}

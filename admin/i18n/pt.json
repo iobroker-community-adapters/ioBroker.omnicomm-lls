@@ -1,0 +1,9 @@
+{
+  "address": "Endereço do sensor",
+  "baud": "Taxa de transmissão",
+  "filtering": "Filtragem",
+  "maxlevel": "Nível máximo",
+  "minlevel": "Nível mínimo",
+  "pollTime": "Tempo de votação (ms)",
+  "usbport": "Porta"
+}

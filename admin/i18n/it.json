@@ -1,0 +1,9 @@
+{
+  "address": "Indirizzo sensore",
+  "baud": "Velocità di trasmissione",
+  "filtering": "Filtraggio",
+  "maxlevel": "Livello massimo",
+  "minlevel": "Livello minimo",
+  "pollTime": "tempo di polling (ms)",
+  "usbport": "Porta"
+}

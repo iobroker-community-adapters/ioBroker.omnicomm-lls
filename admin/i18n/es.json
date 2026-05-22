@@ -1,0 +1,9 @@
+{
+  "address": "Dirección del sensor",
+  "baud": "Baudrate",
+  "filtering": "Filtrado",
+  "maxlevel": "Nivel máximo",
+  "minlevel": "Nivel mínimo",
+  "pollTime": "Tiempo de sondeo (ms)",
+  "usbport": "Puerto"
+}
