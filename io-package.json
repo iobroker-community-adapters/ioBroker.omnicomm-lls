@@ -79,7 +79,6 @@
     "type": "metering",
     "messagebox": true,
     "compact": true,
-    "materialize": true,
     "connectionType": "local",
     "dataSource": "poll",
     "dependencies": [
@@ -91,7 +90,10 @@
       {
         "admin": ">=7.7.22"
       }
-    ]
+    ],
+    "adminUI": {
+      "config": "materialize"
+    }
   },
   "native": {
     "usbport": "",
